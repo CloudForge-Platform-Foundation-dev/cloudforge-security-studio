@@ -1,0 +1,235 @@
+openapi: 3.0.3
+info:
+  title: CloudForge Security Studio
+  description: >-
+    Security Studio ของ CloudForge Platform — รับ canonical event จาก Studio อื่น
+    เก็บ security finding และให้ดูสรุปผล (MVP: in-memory, ไม่มี AI agent)
+  version: 0.1.0
+  x-owner: security-team
+  x-domain: security
+  x-governance-id: CFG-SECURITY-001
+  contact:
+    name: CloudForge Security Team
+    email: security@cloudforge.example.com
+  license:
+    name: MIT
+    url: https://github.com/niphan1000-cyber1000/cloudforge-security-studio/blob/main/LICENSE
+
+servers:
+  - url: http://localhost:8003
+    description: Local development
+
+tags:
+  - name: health
+    description: Health/liveness check endpoints
+  - name: events
+    description: รับ canonical event (Foundation event.schema.json)
+  - name: findings
+    description: ดู security finding ที่รับเข้ามา
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: เช็คว่า service ทำงานอยู่หรือไม่ ใช้สำหรับ liveness/readiness probe
+      operationId: getHealth
+      tags:
+        - health
+      security: []
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /events:
+    post:
+      summary: ส่ง canonical event เข้า Security Studio
+      description: >-
+        ต้องมี scope security:write. ถ้า eventType เป็น Finding.Created
+        payload ต้องมี severity และ title แล้วระบบจะสร้าง finding ให้
+        event ชนิดอื่นจะถูกเก็บไว้โดยไม่สร้าง finding. eventId ซ้ำจะได้ 409
+      operationId: postEvent
+      tags:
+        - events
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CanonicalEvent"
+      responses:
+        "202":
+          description: รับ event แล้ว
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventAccepted"
+        "401":
+          description: Token ไม่ถูกต้อง หมดอายุ หรือใช้ claim scopes แบบ list (deprecated)
+        "403":
+          description: Token ถูกต้องแต่ไม่มี scope security:write
+        "409":
+          description: eventId นี้เคยรับไปแล้ว
+        "422":
+          description: Event หรือ payload ไม่ตรงตาม schema
+        "503":
+          description: Identity Service (JWKS) ไม่พร้อมใช้งาน
+
+  /findings:
+    get:
+      summary: ดู security finding
+      description: >-
+        ต้องมี scope security:read. เรียงใหม่สุดก่อน กรองด้วย severity ได้
+        countsBySeverity นับจากรายการที่ตรงเงื่อนไขทั้งหมดก่อนตัดด้วย limit
+      operationId: listFindings
+      tags:
+        - findings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: severity
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Severity"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        "200":
+          description: รายการ finding
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FindingsResponse"
+        "401":
+          description: Token ไม่ถูกต้องหรือหมดอายุ
+        "403":
+          description: Token ถูกต้องแต่ไม่มี scope security:read
+        "422":
+          description: Query parameter ไม่ถูกต้อง
+        "503":
+          description: Identity Service (JWKS) ไม่พร้อมใช้งาน
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Severity:
+      type: string
+      enum: [CRITICAL, HIGH, MEDIUM, LOW, INFO]
+
+    CanonicalEvent:
+      type: object
+      additionalProperties: false
+      required: [eventId, eventType, source, timestamp, payload]
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+          pattern: '^[A-Z][a-zA-Z0-9]+\.(Created|Updated|Deleted|Action|Failed)$'
+          example: Finding.Created
+        source:
+          type: string
+          minLength: 1
+          description: Studio ที่ส่ง event (ไม่ใช่ security-studio)
+          example: ingest-studio
+        timestamp:
+          type: string
+          format: date-time
+        correlationId:
+          type: string
+          format: uuid
+        causationId:
+          type: string
+          format: uuid
+        payload:
+          type: object
+          description: สำหรับ Finding.Created ต้องมี severity และ title
+          example:
+            severity: HIGH
+            title: Hardcoded password
+            resource: src/app.py
+        metadata:
+          type: object
+          properties:
+            schemaVersion:
+              type: string
+              pattern: '^v\d+\.\d+$'
+            traceId:
+              type: string
+          additionalProperties:
+            type: string
+
+    EventAccepted:
+      type: object
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        findingCreated:
+          type: boolean
+
+    Finding:
+      type: object
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        source:
+          type: string
+        severity:
+          $ref: "#/components/schemas/Severity"
+        title:
+          type: string
+        resource:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        eventTimestamp:
+          type: string
+          format: date-time
+        receivedAt:
+          type: string
+          format: date-time
+        reportedBy:
+          type: string
+
+    FindingsResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        countsBySeverity:
+          type: object
+          additionalProperties:
+            type: integer
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Finding"

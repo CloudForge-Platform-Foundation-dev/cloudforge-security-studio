@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  governance-gate:
+    uses: niphan1000-cyber1000/foundation-validation/.github/workflows/reusable-gate.yml@v1.0.2
+    with:
+      spec_path: openapi.yaml
+      engine_ref: v1.0.2
+    secrets:
+      foundation_pat: ${{ secrets.FOUNDATION_PAT }}
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Run tests
+        run: pytest tests/ -v

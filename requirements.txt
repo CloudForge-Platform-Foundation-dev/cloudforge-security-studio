@@ -1,0 +1,8 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+pydantic-settings==2.5.2
+# JWT verification / scope enforcement lives in the shared package
+# (CloudForge Identity Contract v1). Do not add PyJWT / python-jose here
+# and do not re-implement verification in this Studio.
+cloudforge-auth-core @ git+https://github.com/CloudForge-Platform-Foundation-dev/cloudforge-auth-core.git@v1.1.4

@@ -1,0 +1,7 @@
+services:
+  security-studio:
+    build: .
+    ports:
+      - "8003:8000"
+    env_file:
+      - .env
