@@ -3,7 +3,7 @@
 > Studio สำหรับ security analysis และ compliance ของ CloudForge Platform — **MVP v0.1.0**
 
 รับ canonical event จาก Studio อื่น, เก็บ security finding และให้ดูสรุป
-ยืนยันตัวตนผ่าน `cloudforge-auth-core@v1.1.4` (Identity Contract v1) ห้าม implement JWT เองใน repo นี้
+ยืนยันตัวตนผ่าน `cloudforge-auth-core@v1.1.6` (Identity Contract v1) ห้าม implement JWT เองใน repo นี้
 
 ## Endpoints
 
@@ -46,9 +46,11 @@ uvicorn src.main:app --port 8003
 
 - ข้อมูลเก็บใน memory หายเมื่อ restart (ADR-001)
 - ยังไม่มีการตรวจตาม policy `.rego` และ AI agent
-- ชื่อ scope `security:read` / `security:write` ตั้งตามรูปแบบ `nova:query` — ตรวจให้ตรงกับ Identity Contract v1 ก่อนใช้จริง
+- ชื่อ scope `security:read` / `security:write` ตั้งตามรูปแบบ `{studio}:{permission}` — ตรวจให้ตรงกับ Identity Contract v1 ก่อนใช้จริง
 
 ## การตั้งค่า CI
 
 - ตั้ง secret `FOUNDATION_PAT` ใน repo (governance-gate ต้องใช้)
 - แก้ `CODEOWNERS`, อีเมลใน `openapi.yaml` และ `x-governance-id` (`CFG-SECURITY-001` เป็นค่าที่ตั้งเอง) ให้ตรงกับของจริง
+
+
