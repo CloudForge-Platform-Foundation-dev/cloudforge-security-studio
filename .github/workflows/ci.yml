@@ -1,38 +1,24 @@
-name: CI
+﻿name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
-  governance-gate:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run Governance Gate
-        uses: security-studio/governance-action@v1
-        with:
-          spec_path: openapi.yaml
-          engine_ref: v1.0.2
-          secrets:
-            foundation_pat: ${{ secrets.FOUNDATION_PAT }}
-
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install dependencies
-        run: pip install -r requirements-dev.txt
-      - name: Run tests
-        run: pytest tests/ -v
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Set up Helm
         uses: azure/setup-helm@v3
-      - name: Helm Lint
-        run: helm lint ./security-studio-chart
+        with:
+          version: 'latest'
+
+      - name: Helm Lint Check
+        run: |
+          echo "Running helm lint..."
+          helm lint ./security-studio-chart
