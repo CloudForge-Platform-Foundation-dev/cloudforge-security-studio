@@ -4,6 +4,10 @@
 
 replicaCount: 1
 
+# Port the app listens on inside the container (uvicorn --port 8000 in the Dockerfile).
+# The Service maps its own port (service.port) to this one via the named port "http".
+containerPort: 8000
+
 image:
   repository: security-studio
   pullPolicy: IfNotPresent
@@ -73,11 +77,11 @@ resources: {}
 
 livenessProbe:
   httpGet:
-    path: /
+    path: /health
     port: http
 readinessProbe:
   httpGet:
-    path: /
+    path: /health
     port: http
 
 autoscaling:
