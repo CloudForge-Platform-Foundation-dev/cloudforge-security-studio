@@ -3,7 +3,7 @@
 > Studio สำหรับ security analysis และ compliance ของ CloudForge Platform — **MVP v0.1.0**
 
 รับ canonical event จาก Studio อื่น, เก็บ security finding และให้ดูสรุป
-ยืนยันตัวตนผ่าน `cloudforge-auth-core@v1.1.6` (Identity Contract v1) ห้าม implement JWT เองใน repo นี้
+ยืนยันตัวตนผ่าน `cloudforge-auth-core@v1.1.8` (Identity Contract v1) ห้าม implement JWT เองใน repo นี้
 
 ## Endpoints
 
